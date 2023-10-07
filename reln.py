@@ -7,8 +7,6 @@ which is able to backup directories
 
 import os
 import argparse 
-import tempfile, sys
-sys.stderr = tempfile.TemporaryFile()
 
 # version_ap = argparse.ArgumentParser(description="Version Argument")
 # version_ap.add_argument("-V", "--version", required=False, action="store_true")
@@ -40,6 +38,9 @@ if (args.verbose or args.show_progress) and args.silence:
 
 from os.path import basename, dirname, isdir, isfile, exists
 from os import makedirs, remove, removedirs, link
+
+import tempfile, sys
+sys.stderr = tempfile.TemporaryFile()
 
 sources = args.src
 target = args.targ
