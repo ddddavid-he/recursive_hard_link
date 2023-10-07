@@ -7,13 +7,15 @@ which is able to backup directories
 
 import os
 import argparse 
+import tempfile, sys
+sys.stderr = tempfile.TemporaryFile()
 
-version_ap = argparse.ArgumentParser(description="Version Argument")
-version_ap.add_argument("-V", "--version", required=False, action="store_true")
-show_version = version_ap.parse_args()
-if show_version:
-    print("Version 0.1 \nBy Ddddavid 23/10/07")
-    exit(0)
+# version_ap = argparse.ArgumentParser(description="Version Argument")
+# version_ap.add_argument("-V", "--version", required=False, action="store_true")
+# show_version = version_ap.parse_args()
+# if show_version:
+#     print("Version 1.0 \nBy Ddddavid 23/10/08")
+#     exit(0)
 
 ap = argparse.ArgumentParser(description="Recursive Hard Link Tool")
 ap.add_argument("src", nargs="+", type=str, help="Source file or directory")
@@ -24,11 +26,16 @@ ap.add_argument("--mirror", required=False, action="store_true",
                 help="Synchronize target dir and src dir")
 ap.add_argument("-v", "--verbose", required=False, action="store_true",
                 help="Display detailed debugging message to console")
-ap.add_argument("--show-progress", required=False, action="stroe_true",
+ap.add_argument("--show-progress", required=False, action="store_true",
                 help="Display progress")
+ap.add_argument("--silence", required=False, action="store_true",
+                help="Disable outputs except for the final message")
 
-
+global args
 args = ap.parse_args()
+
+if (args.verbose or args.show_progress) and args.silence:
+    print("WARNING: Using conflicting parameters (--verbose|--show-progress) with --silence, --silence will take effect")
 
 
 from os.path import basename, dirname, isdir, isfile, exists
@@ -36,21 +43,32 @@ from os import makedirs, remove, removedirs, link
 
 sources = args.src
 target = args.targ
+global total_file_count, processed_file_count
 total_file_count = 0
 processed_file_count = 0
 
 
 def file_to_file(src:str, targ:str):
+    global total_file_count, processed_file_count, args
     if args.force:
         remove(targ)
         link(src, targ)
-        processed_file_count += 1
     else:
         print(f"WARNING: File {basename(src)} already exists in {dirname(targ)}")
+    processed_file_count += 1
 
 
 def file_to_dir(src:str, targ:str):
-    link(src, f"{targ}/{basename(src)}")
+    global total_file_count, processed_file_count, args
+    try:
+        link(src, f"{targ}/{basename(src)}")
+    except FileExistsError as e:
+        if args.force:
+            remove(f"{targ}/{basename(src)}")
+            link(src, f"{targ}/{basename(src)}")
+        else:
+            if not args.silence:
+                print("WARINING:", e)
     processed_file_count += 1
 
 
@@ -64,18 +82,22 @@ def file_to_any(src:str, targ:str):
         exit(-1)
         
 def action_report(content:str):
-    if args.verbose:
-        print("-> " + content)
-    if args.show_progress:
-        width = int(0.5*os.get_terminal_size().columns)
-        cursor = int(width*processed_file_count/total_file_count)
-        print(
-            "*" * cursor \
-            + \
-            " " * (width-cursor) \
-            + \
-            f"({processed_file_count}/{total_file_count})"
-        )
+    global total_file_count, processed_file_count, args
+    if not args.silence:
+        if args.verbose:
+            print("-> " + content)
+        if args.show_progress or args.verbose:
+            width = int(0.5*os.get_terminal_size().columns)
+            cursor = int(width*processed_file_count/total_file_count)
+            print(
+                "*" * cursor \
+                + \
+                " " * (width-cursor) \
+                + \
+                f" ({processed_file_count}/{total_file_count})"
+            )
+    else:
+        ...
         
 
 
@@ -93,13 +115,19 @@ if len(sources) == 1:
             if isfile(source):
                 file_to_file(source, target)
                 action_report(f"(1/1) {source} linked")
+                exit(0)
             elif isdir(source):
                 raise IsADirectoryError("<src> is directory while <targ> provided as a file name")
             else:
                 print("Unknown type of <targ> found.")
                 exit(-1)
         elif isdir(target):
-            file_to_dir(source, target)
+            if isdir(source):
+                ...
+            else:
+                file_to_dir(source, target)
+                action_report(f"(1/1) {source} linked")
+                exit(0)
         else:
             print("Unknown type of <targ> found.")
             exit(-1)
@@ -109,8 +137,8 @@ if len(sources) == 1:
         #     if isdir(parent):
         #         file_to_file(src, f"{parent}/{basename{target}}")
         # THE ABOVE IS NOT NECESSARY. LINK WILL HANDLE THAT.
-        action_report(f"(1/1) {source} linked")
-    exit(0)
+        ...
+    
     
 
 # normal cases 
@@ -139,7 +167,7 @@ if args.verbose or args.show_progress:
 for source in sources:
     if isfile(source):
         file_to_dir(source, target)
-        action_report(f"({processed_file_count}/{total_file_count}) {src} linked")
+        action_report(f"({processed_file_count}/{total_file_count}) {source} linked")
     elif isdir(source):
         entries = list(os.walk(source))
         root = entries[0][0].replace(basename(entries[0][0]), "")
@@ -152,7 +180,10 @@ for source in sources:
         ## branch = "src_dir" and "src_dir/sub_dir"
         for path, dirs, files in entries:
             branch = path.replace(root, "")
-            os.makedirs(os.join(target, branch))
+            try:
+                os.makedirs(os.path.join(target, branch))
+            except FileExistsError:
+                ...
             for leaf in files:
                 file_to_dir(
                     os.path.join(path, leaf), os.path.join(target, branch)
