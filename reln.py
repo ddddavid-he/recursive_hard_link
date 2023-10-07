@@ -16,8 +16,8 @@ if show_version:
     exit(0)
 
 ap = argparse.ArgumentParser(description="Recursive Hard Link Tool")
-ap.add_argument("src", nargs="+", help="Source file or directory")
-ap.add_argument("targ", help="Target directory for the sources")
+ap.add_argument("src", nargs="+", type=str, help="Source file or directory")
+ap.add_argument("targ", type=str, help="Target directory for the sources")
 ap.add_argument("-f", "--force", required=False, action="store_true",
                 help="Overwrite existing files or directories")
 ap.add_argument("--mirror", required=False, action="store_true",
@@ -34,21 +34,27 @@ args = ap.parse_args()
 from os.path import basename, dirname, isdir, isfile, exists
 from os import makedirs, remove, removedirs, link
 
+sources = args.src
+target = args.targ
+total_file_count = 0
+processed_file_count = 0
 
-def file_to_file(src, targ):
+
+def file_to_file(src:str, targ:str):
     if args.force:
         remove(targ)
         link(src, targ)
-        exit(0)
+        processed_file_count += 1
     else:
-        raise FileExistsError(f"File {basename(src)} already exists in {dirname(targ)}")
+        print(f"WARNING: File {basename(src)} already exists in {dirname(targ)}")
 
 
-def file_to_dir(src, targ):
+def file_to_dir(src:str, targ:str):
     link(src, f"{targ}/{basename(src)}")
+    processed_file_count += 1
 
 
-def file_to_any(src, targ):
+def file_to_any(src:str, targ:str):
     if isfile(targ):
         file_to_file(src, targ)
     elif isdir(targ):
@@ -56,11 +62,27 @@ def file_to_any(src, targ):
     else:
         print("Unknown type of <targ> found.")
         exit(-1)
+        
+def action_report(content:str):
+    if args.verbose:
+        print("-> " + content)
+    if args.show_progress:
+        width = int(0.5*os.get_terminal_size().columns)
+        cursor = int(width*processed_file_count/total_file_count)
+        print(
+            "*" * cursor \
+            + \
+            " " * (width-cursor) \
+            + \
+            f"({processed_file_count}/{total_file_count})"
+        )
+        
 
 
 
-sources = args.src
-target = args.targ
+# TODO: 需要实现正则表达式匹配
+# TODO: 需要实现有颜色输出
+
 
 if len(sources) == 1: 
     # special cases when there is 1 src and 1 targ 
@@ -70,6 +92,7 @@ if len(sources) == 1:
         if isfile(target):
             if isfile(source):
                 file_to_file(source, target)
+                action_report(f"(1/1) {source} linked")
             elif isdir(source):
                 raise IsADirectoryError("<src> is directory while <targ> provided as a file name")
             else:
@@ -86,7 +109,7 @@ if len(sources) == 1:
         #     if isdir(parent):
         #         file_to_file(src, f"{parent}/{basename{target}}")
         # THE ABOVE IS NOT NECESSARY. LINK WILL HANDLE THAT.
-        ...
+        action_report(f"(1/1) {source} linked")
     exit(0)
     
 
@@ -102,12 +125,42 @@ if not isdir(target):
     raise NotADirectoryError(f"{target} is not a directory")
 
 
+if args.verbose or args.show_progress:
+    for source in sources:
+        if isfile(source):
+            total_file_count += 1
+        elif isdir(source):
+            for i,j, files in os.walk(source):
+                total_file_count += len(files)
+        else:
+            ...
+
+
 for source in sources:
     if isfile(source):
         file_to_dir(source, target)
+        action_report(f"({processed_file_count}/{total_file_count}) {src} linked")
     elif isdir(source):
-        for path, dirs, files in os.walk(source):
-            makedirs(path)
+        entries = list(os.walk(source))
+        root = entries[0][0].replace(basename(entries[0][0]), "")
+        # root = src path without the last level 
+        # branch = last level in src path 
+        # leaf = files in src sub dir
+        # root + branch = path 
+        ## e.g. in ../../saved/src_dir  and ../../saved/src_dir/sub_dir
+        ## root = "../../saved/"
+        ## branch = "src_dir" and "src_dir/sub_dir"
+        for path, dirs, files in entries:
+            branch = path.replace(root, "")
+            os.makedirs(os.join(target, branch))
+            for leaf in files:
+                file_to_dir(
+                    os.path.join(path, leaf), os.path.join(target, branch)
+                )
+                action_report(f"({processed_file_count}/{total_file_count}) {os.path.join(path, leaf)} linked")
+                    
+            
+            
             
             
     
