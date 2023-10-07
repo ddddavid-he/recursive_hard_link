@@ -20,8 +20,8 @@ ap.add_argument("src", nargs="+", type=str, help="Source file or directory")
 ap.add_argument("targ", type=str, help="Target directory for the sources")
 ap.add_argument("-f", "--force", required=False, action="store_true",
                 help="Overwrite existing files or directories")
-ap.add_argument("--mirror", required=False, action="store_true",
-                help="Synchronize target dir and src dir")
+# ap.add_argument("--mirror", required=False, action="store_true",
+#                 help="Synchronize target dir and src dir")
 ap.add_argument("-v", "--verbose", required=False, action="store_true",
                 help="Display detailed debugging message to console")
 ap.add_argument("--show-progress", required=False, action="store_true",
