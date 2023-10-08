@@ -192,7 +192,7 @@ if len(sources) == 1:
         if isdir(source):
             if exists(parent):
                 makedirs(target)
-                source = [os.path.join(source, i) for i in os.listdir(source)]
+                sources = [os.path.join(source, i) for i in os.listdir(source)]
                 ...
             else:
                 raise FileNotFoundError(f"{parent} not exists\n cannot create {target}")
