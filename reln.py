@@ -176,7 +176,6 @@ if len(sources) == 1:
                 exit(-1)
         elif isdir(target): 
             if isdir(source): # d2d
-                total_file_count = 0
                 ... 
                 # go back to normal cases
             else: # f2d
@@ -193,15 +192,20 @@ if len(sources) == 1:
         if isdir(source):
             if exists(parent):
                 makedirs(target)
+                source = [os.path.join(source, i) for i in os.listdir(source)]
+                ...
             else:
                 raise FileNotFoundError(f"{parent} not exists\n cannot create {target}")
         elif isfile(source):
             if exists(parent):
                 link(source, target)
+                exit(0)
             else:
                 raise FileNotFoundError(f"{parent} not exists\n cannot create {target}") 
         else:
             print("\033[91mUnknown type of <src> found.\033[0m")
+            exit(-1)
+        
             
     
     
@@ -216,7 +220,7 @@ if len(sources) == 1:
 if not isdir(target) and exists(target):
     raise NotADirectoryError(f"{target} is not a directory")
 
-
+total_file_count = 0
 if args.verbose or args.show_progress:
     for source in sources:
         if isfile(source):
