@@ -199,16 +199,13 @@ if len(sources) == 1:
     
 
 # normal cases 
-# if not exists(target):
-#     if dirname(target) == '':
-#         file_to_file(source, target)
-#     raise FileNotFoundError(f"Dir {target} does not exists")
+# only N2d or d2d comes to this loop
 
 ## if there are more than 1 files in <src> 
 ## or any dirs, <targ> has to be a dir.
 ## So, when there are more than one <src>s, 
 ## the <targ> has to be dir.
-if not isdir(target):
+if not isdir(target) and exists(target):
     raise NotADirectoryError(f"{target} is not a directory")
 
 
