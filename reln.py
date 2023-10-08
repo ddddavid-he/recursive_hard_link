@@ -70,14 +70,12 @@ def file_to_file(src:str, targ:str):
 
 def file_to_dir(src:str, targ:str):
     global total_file_count, processed_file_count, args
-    if targ[-1] == "/":
-        targ = targ[:-1]
     try:
-        link(src, f"{targ}/{basename(src)}")
+        link(src, os.path.join(targ, basename(src)))
     except FileExistsError as e:
         if args.force:
-            remove(f"{targ}/{basename(src)}")
-            link(src, f"{targ}/{basename(src)}")
+            remove(os.path.join(targ, basename(src)))
+            link(src, os.path.join(targ, basename(src)))
         else:
             if not args.silence:
                 print("\033[93mWARNING\033[0m:", e)
@@ -188,18 +186,28 @@ if len(sources) == 1:
         else:
             print("\033[91mUnknown type of <targ> found.\033[0m")
             exit(-1)
-    else:
-        # parent = dirname(target)
-        # if exists(parent):
-        #     if isdir(parent):
-        #         file_to_file(src, f"{parent}/{basename{target}}")
-        # THE ABOVE IS NOT NECESSARY. LINK WILL HANDLE THAT.
-        ...
+    else: # target not exists
+        parent = dirname(target)
+        if parent=="":
+            parent = "."
+        if isdir(source):
+            if exists(parent):
+                makedirs(target)
+            else:
+                raise FileNotFoundError(f"{parent} not exists\n cannot create {target}")
+        elif isfile(source):
+            if exists(parent):
+                link(source, target)
+            else:
+                raise FileNotFoundError(f"{parent} not exists\n cannot create {target}") 
+        else:
+            print("\033[91mUnknown type of <src> found.\033[0m")
+            
     
     
 
 # normal cases 
-# only N2d or d2d comes to this loop
+# only N2d or d2d(targ d exists) comes to this loop
 
 ## if there are more than 1 files in <src> 
 ## or any dirs, <targ> has to be a dir.
