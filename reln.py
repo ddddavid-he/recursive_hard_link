@@ -178,7 +178,9 @@ if len(sources) == 1:
                 exit(-1)
         elif isdir(target): 
             if isdir(source): # d2d
-                ...
+                total_file_count = 0
+                ... 
+                # go back to normal cases
             else: # f2d
                 file_to_dir(source, target)
                 action_report(f"(1/1) {source} linked")
