@@ -7,6 +7,8 @@ which is able to backup directories
 
 import os
 import argparse 
+import fnmatch
+import re 
 
 # version_ap = argparse.ArgumentParser(description="Version Argument")
 # version_ap.add_argument("-V", "--version", required=False, action="store_true")
@@ -28,6 +30,9 @@ ap.add_argument("--show-progress", required=False, action="store_true",
                 help="Display progress")
 ap.add_argument("--silence", required=False, action="store_true",
                 help="Disable outputs except for the final message")
+ap.add_argument("--regex", required=False, action="store_true",
+                help="Enable regex support")
+
 
 global args
 args = ap.parse_args()
@@ -52,11 +57,14 @@ processed_file_count = 0
 
 def file_to_file(src:str, targ:str):
     global total_file_count, processed_file_count, args
-    if args.force:
-        remove(targ)
-        link(src, targ)
+    if os.path.abspath(src) == os.path.abspath(targ):
+        ...
     else:
-        print(f"\033[93mWARNING\033[0m: File {basename(src)} already exists in {dirname(targ)}")
+        if args.force:
+            remove(targ)
+            link(src, targ)
+        else:
+            print(f"\033[93mWARNING\033[0m: File {basename(src)} already exists in {dirname(targ)}")
     processed_file_count += 1
 
 
@@ -76,14 +84,14 @@ def file_to_dir(src:str, targ:str):
     processed_file_count += 1
 
 
-def file_to_any(src:str, targ:str):
-    if isfile(targ):
-        file_to_file(src, targ)
-    elif isdir(targ):
-        file_to_dir(src, targ)
-    else:
-        print("\033[91mUnknown type of <targ> found.\033[0m")
-        exit(-1)
+# def file_to_any(src:str, targ:str):
+#     if isfile(targ):
+#         file_to_file(src, targ)
+#     elif isdir(targ):
+#         file_to_dir(src, targ)
+#     else:
+#         print("\033[91mUnknown type of <targ> found.\033[0m")
+#         exit(-1)
         
 def action_report(content:str):
     global total_file_count, processed_file_count, args
@@ -102,18 +110,60 @@ def action_report(content:str):
             )
     else:
         ...
-        
 
 
+# def is_regex(s: str):
+#     try:
+#         re.compile(s)
+#         return True
+#     except re.error:
+#         return False
 
-# TODO: 需要实现正则表达式匹配
-# TODO: 需要实现有颜色输出
+# def is_fnmatch(s: str) -> bool:
+#     flag = False
+#     if "*" in s:
+#         flag += True
+#     if "?" in s:
+#         flag += True
+#     if "[" in s and "]" in s and\
+#         s.index("]") > s.index("["):
+#         flag += True
+#     # if "(" in s and ")" in s and\
+#     #     s.index(")") > s.index("("):
+#     #     flag += True
+#     return flag
+
+
+# new_sources = []
+# for source in sources:
+#     if is_fnmatch(source):
+#         sub_sources = []
+#         expr = source
+#         if dirname(expr) != '':
+#             files = os.listdir(dirname(expr))
+#         else:
+#             files = os.listdir("./")
+#         # sub_sources = list(filter(lambda name: re.match(expr, name)!=None, files))
+#         for i in files:
+#             if fnmatch.fnmatchcase(i, expr):
+#                 sub_sources.append(i)
+#         # sub_sources = fnmatch.filter(files, basename(expr))
+#         new_sources += [f"{dirname(expr)}/{i}" for i in sub_sources]
+#         print(new_sources)
+#     else:
+#         new_sources += source
+# sources = new_sources
+    
+    
 
 
 if len(sources) == 1: 
     # special cases when there is 1 src and 1 targ 
     # and is d2f, f2f and f2d 
     source = sources[0]
+    if not exists(source):
+        print(f"\033[93mWARNING\033[0m: File {basename(source)} not exists")
+        exit(0)
     total_file_count = 1
     if exists(target):
         if isfile(target):
@@ -127,7 +177,7 @@ if len(sources) == 1:
                 print("\033[91mUnknown type of <targ> found.\033[0m")
                 exit(-1)
         elif isdir(target): 
-            if isdir(source): # f2d
+            if isdir(source): # d2d
                 ...
             else: # f2d
                 file_to_dir(source, target)
@@ -172,10 +222,18 @@ if args.verbose or args.show_progress:
 
 
 for source in sources:
+    # only N2d or d2d comes to this loop
+    if not exists(source):
+        print(f"\033[93mWARNING\033[0m: File {basename(source)} not exists")
+        # processed_file_count += 1
+        continue
+    
     if isfile(source):
         file_to_dir(source, target)
         action_report(f"({processed_file_count}/{total_file_count}) {source} linked")
     elif isdir(source):
+        if os.path.abspath(source) == os.path.abspath(target):
+            continue
         entries = list(os.walk(source))
         root = entries[0][0].replace(basename(entries[0][0]), "")
         # root = src path without the last level 
@@ -196,9 +254,11 @@ for source in sources:
                     os.path.join(path, leaf), os.path.join(target, branch)
                 )
                 action_report(f"({processed_file_count}/{total_file_count}) {os.path.join(path, leaf)} linked")
+    else:
+        print(f"\033[91mUnknown type of <src>: {source} found.\033[0m")
                     
-            
-            
+
+exit(0)
             
             
     
