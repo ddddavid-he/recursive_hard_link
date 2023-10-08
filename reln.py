@@ -32,15 +32,16 @@ ap.add_argument("--silence", required=False, action="store_true",
 global args
 args = ap.parse_args()
 
+
 if (args.verbose or args.show_progress) and args.silence:
-    print("WARNING: Using conflicting parameters (--verbose|--show-progress) with --silence, --silence will take effect")
+    print("\033[93mWARNING\033[0m: Using conflicting parameters (--verbose|--show-progress) with --silence, --silence will take effect")
 
 
 from os.path import basename, dirname, isdir, isfile, exists
 from os import makedirs, remove, removedirs, link
 
-import tempfile, sys
-sys.stderr = tempfile.TemporaryFile()
+# import tempfile, sys
+# sys.stderr = tempfile.TemporaryFile()
 
 sources = args.src
 target = args.targ
@@ -55,12 +56,14 @@ def file_to_file(src:str, targ:str):
         remove(targ)
         link(src, targ)
     else:
-        print(f"WARNING: File {basename(src)} already exists in {dirname(targ)}")
+        print(f"\033[93mWARNING\033[0m: File {basename(src)} already exists in {dirname(targ)}")
     processed_file_count += 1
 
 
 def file_to_dir(src:str, targ:str):
     global total_file_count, processed_file_count, args
+    if targ[-1] == "/":
+        targ = targ[:-1]
     try:
         link(src, f"{targ}/{basename(src)}")
     except FileExistsError as e:
@@ -69,7 +72,7 @@ def file_to_dir(src:str, targ:str):
             link(src, f"{targ}/{basename(src)}")
         else:
             if not args.silence:
-                print("WARINING:", e)
+                print("\033[93mWARNING\033[0m:", e)
     processed_file_count += 1
 
 
@@ -79,7 +82,7 @@ def file_to_any(src:str, targ:str):
     elif isdir(targ):
         file_to_dir(src, targ)
     else:
-        print("Unknown type of <targ> found.")
+        print("\033[91mUnknown type of <targ> found.\033[0m")
         exit(-1)
         
 def action_report(content:str):
@@ -91,11 +94,11 @@ def action_report(content:str):
             width = int(0.5*os.get_terminal_size().columns)
             cursor = int(width*processed_file_count/total_file_count)
             print(
-                "*" * cursor \
-                + \
-                " " * (width-cursor) \
-                + \
-                f" ({processed_file_count}/{total_file_count})"
+                "[\033[92m" + \
+                "*" * cursor + \
+                " " * (width-cursor) + \
+                "\033[0m]" + \
+                f" \033[92m({processed_file_count}/{total_file_count})\033[0m"
             )
     else:
         ...
@@ -111,26 +114,27 @@ if len(sources) == 1:
     # special cases when there is 1 src and 1 targ 
     # and is d2f, f2f and f2d 
     source = sources[0]
+    total_file_count = 1
     if exists(target):
         if isfile(target):
-            if isfile(source):
+            if isfile(source): # f2f
                 file_to_file(source, target)
                 action_report(f"(1/1) {source} linked")
                 exit(0)
-            elif isdir(source):
+            elif isdir(source): # d2f
                 raise IsADirectoryError("<src> is directory while <targ> provided as a file name")
             else:
-                print("Unknown type of <targ> found.")
+                print("\033[91mUnknown type of <targ> found.\033[0m")
                 exit(-1)
-        elif isdir(target):
-            if isdir(source):
+        elif isdir(target): 
+            if isdir(source): # f2d
                 ...
-            else:
+            else: # f2d
                 file_to_dir(source, target)
                 action_report(f"(1/1) {source} linked")
                 exit(0)
         else:
-            print("Unknown type of <targ> found.")
+            print("\033[91mUnknown type of <targ> found.\033[0m")
             exit(-1)
     else:
         # parent = dirname(target)
@@ -143,8 +147,10 @@ if len(sources) == 1:
     
 
 # normal cases 
-if not exists(target):
-    raise FileNotFoundError(f"Dir {target} does not exists")
+# if not exists(target):
+#     if dirname(target) == '':
+#         file_to_file(source, target)
+#     raise FileNotFoundError(f"Dir {target} does not exists")
 
 ## if there are more than 1 files in <src> 
 ## or any dirs, <targ> has to be a dir.
@@ -182,7 +188,7 @@ for source in sources:
         for path, dirs, files in entries:
             branch = path.replace(root, "")
             try:
-                os.makedirs(os.path.join(target, branch))
+                makedirs(os.path.join(target, branch))
             except FileExistsError:
                 ...
             for leaf in files:
