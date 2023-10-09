@@ -42,11 +42,9 @@ if (args.verbose or args.show_progress) and args.silence:
     print("\033[93mWARNING\033[0m: Using conflicting parameters (--verbose|--show-progress) with --silence, --silence will take effect")
 
 
-from os.path import basename, dirname, isdir, isfile, exists
+from os.path import basename, dirname, isdir, isfile, exists, join
 from os import makedirs, remove, removedirs, link
 
-# import tempfile, sys
-# sys.stderr = tempfile.TemporaryFile()
 
 sources = args.src
 target = args.targ
@@ -71,15 +69,16 @@ def file_to_file(src:str, targ:str):
 def file_to_dir(src:str, targ:str):
     global total_file_count, processed_file_count, args
     try:
-        link(src, os.path.join(targ, basename(src)))
+        link(src, join(targ, basename(src)))
     except FileExistsError as e:
         # if args.force:
-        #     remove(os.path.join(targ, basename(src)))
-        #     link(src, os.path.join(targ, basename(src)))
+        #     remove(join(targ, basename(src)))
+        #     link(src, join(targ, basename(src)))
         # else:
         #     if not args.silence:
         #         print("\033[93mWARNING\033[0m:", e)
-        file_to_file(src, os.path.join(targ, basename(src)))
+        file_to_file(src, join(targ, basename(src)))
+        return
     processed_file_count += 1
 
 
@@ -193,7 +192,7 @@ if len(sources) == 1:
         if isdir(source):
             if exists(parent):
                 makedirs(target)
-                sources = [os.path.join(source, i) for i in os.listdir(source)]
+                sources = [join(source, i) for i in os.listdir(source)]
                 ...
             else:
                 raise FileNotFoundError(f"{parent} not exists\n cannot create {target}")
@@ -258,14 +257,14 @@ for source in sources:
         for path, dirs, files in entries:
             branch = path.replace(root, "")
             try:
-                makedirs(os.path.join(target, branch))
+                makedirs(join(target, branch))
             except FileExistsError:
                 ...
             for leaf in files:
                 file_to_dir(
-                    os.path.join(path, leaf), os.path.join(target, branch)
+                    join(path, leaf), join(target, branch)
                 )
-                action_report(f"({processed_file_count}/{total_file_count}) {os.path.join(path, leaf)} linked")
+                action_report(f"({processed_file_count}/{total_file_count}) {join(path, leaf)} linked")
     else:
         print(f"\033[91mUnknown type of <src>: {source} found.\033[0m")
                     
