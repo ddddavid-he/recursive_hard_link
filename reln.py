@@ -73,12 +73,13 @@ def file_to_dir(src:str, targ:str):
     try:
         link(src, os.path.join(targ, basename(src)))
     except FileExistsError as e:
-        if args.force:
-            remove(os.path.join(targ, basename(src)))
-            link(src, os.path.join(targ, basename(src)))
-        else:
-            if not args.silence:
-                print("\033[93mWARNING\033[0m:", e)
+        # if args.force:
+        #     remove(os.path.join(targ, basename(src)))
+        #     link(src, os.path.join(targ, basename(src)))
+        # else:
+        #     if not args.silence:
+        #         print("\033[93mWARNING\033[0m:", e)
+        file_to_file(src, os.path.join(targ, basename(src)))
     processed_file_count += 1
 
 
