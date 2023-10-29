@@ -30,8 +30,8 @@ ap.add_argument("--show-progress", required=False, action="store_true",
                 help="Display progress")
 ap.add_argument("--silence", required=False, action="store_true",
                 help="Disable outputs except for the final message")
-ap.add_argument("--regex", required=False, action="store_true",
-                help="Enable regex support")
+# ap.add_argument("--regex", required=False, action="store_true",
+#                 help="Enable regex support")
 
 
 global args
@@ -110,49 +110,6 @@ def action_report(content:str):
         ...
 
 
-# def is_regex(s: str):
-#     try:
-#         re.compile(s)
-#         return True
-#     except re.error:
-#         return False
-
-# def is_fnmatch(s: str) -> bool:
-#     flag = False
-#     if "*" in s:
-#         flag += True
-#     if "?" in s:
-#         flag += True
-#     if "[" in s and "]" in s and\
-#         s.index("]") > s.index("["):
-#         flag += True
-#     # if "(" in s and ")" in s and\
-#     #     s.index(")") > s.index("("):
-#     #     flag += True
-#     return flag
-
-
-# new_sources = []
-# for source in sources:
-#     if is_fnmatch(source):
-#         sub_sources = []
-#         expr = source
-#         if dirname(expr) != '':
-#             files = os.listdir(dirname(expr))
-#         else:
-#             files = os.listdir("./")
-#         # sub_sources = list(filter(lambda name: re.match(expr, name)!=None, files))
-#         for i in files:
-#             if fnmatch.fnmatchcase(i, expr):
-#                 sub_sources.append(i)
-#         # sub_sources = fnmatch.filter(files, basename(expr))
-#         new_sources += [f"{dirname(expr)}/{i}" for i in sub_sources]
-#         print(new_sources)
-#     else:
-#         new_sources += source
-# sources = new_sources
-    
-    
 
 
 if len(sources) == 1: 
