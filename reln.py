@@ -7,8 +7,7 @@ which is able to backup directories
 
 import os
 import argparse 
-import fnmatch
-import re 
+
 
 # version_ap = argparse.ArgumentParser(description="Version Argument")
 # version_ap.add_argument("-V", "--version", required=False, action="store_true")
@@ -30,8 +29,8 @@ ap.add_argument("--show-progress", required=False, action="store_true",
                 help="Display progress")
 ap.add_argument("--silence", required=False, action="store_true",
                 help="Disable outputs except for the final message")
-# ap.add_argument("--regex", required=False, action="store_true",
-#                 help="Enable regex support")
+ap.add_argument("-c", "--create-dir", required=False, action="store_true",
+                help="Create dir when target not exists and upper-level dir exists in N-file to Dir operation.")
 
 
 global args
@@ -43,7 +42,7 @@ if (args.verbose or args.show_progress) and args.silence:
 
 
 from os.path import basename, dirname, isdir, isfile, exists, join
-from os import makedirs, remove, removedirs, link
+from os import makedirs, remove, link
 
 
 sources = args.src
@@ -175,7 +174,7 @@ if len(sources) == 1:
 ## So, when there are more than one <src>s, 
 ## the <targ> has to be dir.
 if not isdir(target) and exists(target):
-    raise NotADirectoryError(f"{target} is not a directory")
+    raise NotADirectoryError(f"{target} is not a directory.")
 
 total_file_count = 0
 if args.verbose or args.show_progress:
@@ -192,15 +191,25 @@ if args.verbose or args.show_progress:
 for source in sources:
     # only N2d or d2d comes to this loop
     if not exists(source):
-        print(f"\033[93mWARNING\033[0m: File {basename(source)} not exists")
+        print(f"\033[93mWARNING\033[0m: File {basename(source)} not exists.")
         # processed_file_count += 1
         continue
     if not exists(target):
-        raise FileNotFoundError(f'Target dir "{target}" not exists.')
+        if args.create_dir:
+            print(f"\033[96mInfo\033[0m: Target dir {target} not exists.")
+            parent = dirname(target)
+            if parent=="":
+                parent = "."
+            if exists(parent):
+                os.makedirs(target)
+            else:
+                raise FileNotFoundError(f'Neither dir {target} nor {parent} exists.')
+        else:
+            raise FileNotFoundError(f'Target dir "{target}" not exists.')
     
     if isfile(source):
         file_to_dir(source, target)
-        action_report(f"({processed_file_count}/{total_file_count}) {source} linked")
+        action_report(f"({processed_file_count}/{total_file_count}) {source} linked.")
     elif isdir(source):
         if os.path.abspath(source) == os.path.abspath(target):
             continue
