@@ -195,6 +195,8 @@ for source in sources:
         print(f"\033[93mWARNING\033[0m: File {basename(source)} not exists")
         # processed_file_count += 1
         continue
+    if not exists(target):
+        raise FileNotFoundError(f'Target dir "{target}" not exists.')
     
     if isfile(source):
         file_to_dir(source, target)
