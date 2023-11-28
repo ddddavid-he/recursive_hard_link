@@ -202,6 +202,7 @@ for source in sources:
                 parent = "."
             if exists(parent):
                 os.makedirs(target)
+                print(f"\033[96mInfo\033[0m: {target} created.")
             else:
                 raise FileNotFoundError(f'Neither dir {target} nor {parent} exists.')
         else:
