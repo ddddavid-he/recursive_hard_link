@@ -29,8 +29,10 @@ ap.add_argument("--show-progress", required=False, action="store_true",
                 help="Display progress")
 ap.add_argument("--silence", required=False, action="store_true",
                 help="Disable outputs except for the final message")
-ap.add_argument("-c", "--create-dir", required=False, action="store_true",
+ap.add_argument("--create-dir", required=False, action="store_true",
                 help="Create dir when target not exists and upper-level dir exists in N-file to Dir operation.")
+ap.add_argument("--prefix", required=False, type=str, 
+                help="Add prefix to file name(s).")            
 
 
 global args
@@ -76,7 +78,10 @@ def file_to_dir(src:str, targ:str):
         # else:
         #     if not args.silence:
         #         print("\033[93mWARNING\033[0m:", e)
-        file_to_file(src, join(targ, basename(src)))
+        if args.prefix:
+            file_to_file(src, join(targ, args.prefix+basename(src)))
+        else:
+            file_to_file(src, join(targ, basename(src)))
         return
     processed_file_count += 1
 
@@ -214,6 +219,8 @@ for source in sources:
     elif isdir(source):
         if os.path.abspath(source) == os.path.abspath(target):
             continue
+        if args.show_progress:
+            print(f"\033[96mEnumerating entries ... \033[0m")
         entries = list(os.walk(source))
         root = entries[0][0].replace(basename(entries[0][0]), "")
         # root = src path without the last level 
