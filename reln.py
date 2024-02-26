@@ -99,11 +99,12 @@ def action_report(content:str):
             width = int(0.5*os.get_terminal_size().columns)
             cursor = int(width*processed_file_count/total_file_count)
             print(
-                "[\033[92m" + \
+                "\r[\033[92m" + \
                 "*" * cursor + \
                 " " * (width-cursor) + \
                 "\033[0m]" + \
-                f" \033[92m({processed_file_count}/{total_file_count})\033[0m"
+                f" \033[92m({processed_file_count}/{total_file_count})\033[0m",
+                end=""
             )
     else:
         ...
